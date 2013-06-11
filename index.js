@@ -1,62 +1,29 @@
-'use strict'
+var skyline = require('../index')();
 
-var fs = require('fs');
+var canvas = document.getElementsByTagName('canvas')[0];
+var ctx = canvas.getContext('2d');
+var SCALE = 25;
 
-module.exports = getBuildingsAndCreateSkyline;
-
-
-function getBuildingsAndCreateSkyline() {
-  var buildings = [];
-  var input = fs.readFileSync(__dirname + '/buildings.txt', {encoding: 'utf8'});
-  input.split('\n').forEach(function(chunk) {
-    var temp = chunk.split(' ').map(returnInt);
-    if (temp.length == 3) buildings.push(temp);
-  });
-  return buildSkyline(buildings);
-}
+var maxHeight = Math.max.apply(null, skyline.filter(function(num, i){ if (i % 2 == true) return num }));
+var maxWidth = Math.max.apply(null, skyline.filter(function(num, i){ if (i % 2 == false) return num }));
 
 
-function buildSkyline(buildings) {
-  var basement = createBasement(buildings);
-  var filledBasement = fillBasement(basement, buildings);
-  return drawSkyline(filledBasement);
-}
+canvas.width = (maxWidth + 1) * SCALE; // leave some padding
+canvas.height = (maxHeight + 1) * SCALE;
 
+ctx.beginPath();
+ctx.fillText(''+skyline, 0, 10);
+ctx.translate(0, canvas.height - 1);
+ctx.moveTo(skyline[0], 0);
 
-function fillBasement(basement, buildings) {
-  for (var i = 0, len = buildings.length; i < len; i++) {
-    var b = buildings[i], l = b[0], h = b[1], r = b[2];
-    for (var j = l; j < r; j++) {
-      if (h >= basement[j]) basement[j] = h;
-    }
+for (var i = 0, len = skyline.length; i < len; i++) {
+  skyline[i] = skyline[i] * SCALE;
+  if (i % 2 == true) {
+    ctx.lineTo(skyline[i - 1], skyline[i] * -1);
   }
-  return basement;
-}
-
-
-function drawSkyline(xHeights) {
-  var skyline = [];
-  for (var x in xHeights) {
-    if (x != 0 && xHeights[x] != xHeights[x - 1]) {
-      skyline.push(returnInt(x), xHeights[x]);
-    }
+  else {
+    ctx.lineTo(skyline[i], skyline[i - 1] * - 1|| 0);
   }
-  return skyline;
 }
 
-
-function createBasement(buildings) {
-  var basement = {};
-  var xCoords = buildings.map(function(b){ return [b[0],b[2]] });
-  var max = Math.max.apply(Math, [].concat.apply([], xCoords));
-
-  for (var i = 0; i <= max; i++) {
-    basement[i] = 0;
-  };
-  return basement;
-}
-
-
-function returnInt(element){
-  return parseInt(element, 10);
-}
+ctx.stroke();
